@@ -1,0 +1,51 @@
+,state,victimID,Names,Names_lower,Names_camel
+0,AK,33,ALASKA,alaska,Alaska
+1,AL,274,ALABAMA,alabama,Alabama
+2,AR,134,ARKANSAS,arkansas,Arkansas
+3,AZ,248,ARIZONA,arizona,Arizona
+4,CA,1447,CALIFORNIA,california,California
+5,CO,146,COLORADO,colorado,Colorado
+6,CT,110,CONNECTICUT,connecticut,Connecticut
+7,DE,41,DELAWARE,delaware,Delaware
+8,FL,778,FLORIDA,florida,Florida
+9,GA,390,GEORGIA,georgia,Georgia
+10,HI,13,HAWAII,hawaii,Hawaii
+11,IA,56,IOWA,iowa,Iowa
+12,ID,29,IDAHO,idaho,Idaho
+13,IL,615,ILLINOIS,illinois,Illinois
+14,IN,344,INDIANA,indiana,Indiana
+15,KS,112,KANSAS,kansas,Kansas
+16,KY,179,KENTUCKY,kentucky,Kentucky
+17,LA,424,LOUISIANA,louisiana,Louisiana
+18,MA,98,MASSACHUSETTS,massachusetts,Massachusetts
+19,MD,332,MARYLAND,maryland,Maryland
+20,ME,26,MAINE,maine,Maine
+21,MI,491,MICHIGAN,michigan,Michigan
+22,MN,105,MINNESOTA,minnesota,Minnesota
+23,MO,355,MISSOURI,missouri,Missouri
+24,MS,141,MISSISSIPPI,mississippi,Mississippi
+25,MT,32,MONTANA,montana,Montana
+26,NC,438,NORTH CAROLINA,north carolina,North Carolina
+27,ND,8,NORTH DAKOTA,north dakota,North Dakota
+28,NE,54,NEBRASKA,nebraska,Nebraska
+29,NH,14,NEW HAMPSHIRE,new hampshire,New Hampshire
+30,NJ,278,NEW JERSEY,new jersey,New Jersey
+31,NM,88,NEW MEXICO,new mexico,New Mexico
+32,NV,121,NEVADA,nevada,Nevada
+33,NY,379,NEW YORK,new york,New York
+34,OH,497,OHIO,ohio,Ohio
+35,OK,183,OKLAHOMA,oklahoma,Oklahoma
+36,OR,85,OREGON,oregon,Oregon
+37,PA,570,PENNSYLVANIA,pennsylvania,Pennsylvania
+38,RI,25,RHODE ISLAND,rhode island,Rhode Island
+39,SC,236,SOUTH CAROLINA,south carolina,South Carolina
+40,SD,17,SOUTH DAKOTA,south dakota,South Dakota
+41,TN,290,TENNESSEE,tennessee,Tennessee
+42,TX,988,TEXAS,texas,Texas
+43,UT,54,UTAH,utah,Utah
+44,VA,282,VIRGINIA,virginia,Virginia
+45,VT,15,VERMONT,vermont,Vermont
+46,WA,143,WASHINGTON,washington,Washington
+47,WI,166,WISCONSIN,wisconsin,Wisconsin
+48,WV,65,WEST VIRGINIA,west virginia,West Virginia
+49,WY,16,WYOMING,wyoming,Wyoming

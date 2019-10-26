@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 12px sans-serif;
+}
+
+
+
+                    .background {
+                        fill:none;
+                        stroke: black;
+                        pointer-events: all;
+                    }
+                        
+                    state {
+                        /* fill: #aaaaaa; */
+                        stroke: #333333;
+                        stroke-width: 1.5;
+                    }
+                    county {
+                        fill: #123AAA;
+                        stroke: #fff;
+                        stroke-width: 0.5;
+                    }
+                    path {
+                        stroke-width: 1.5;
+                        stroke: #dbdbdb;
+                        /* fill: #aaaaaa; */
+                        cursor: pointer;
+                    }
+
+                    path:hover, path.highlighted{
+                        stroke-width: 2.5;
+                        stroke: #0200006c;
+                    }
+                    
+                        .state {
+                        /* fill: #ccc; */
+                        cursor: pointer;
+                        }
+
+                        .state.active {
+                            fill: #E2F5AF       ;
+                            opacity: 0.6;
+                            stroke: black;
+
+                        }
+
+                    .hidden {
+                            display: none;
+                            }
+
+                            div.tooltip {
+                            color: #222; 
+                            background: #fff; 
+                            border-radius: 3px; 
+                            box-shadow: 0px 0px 2px 0px #a6a6a6; 
+                            padding: .2em; 
+                            text-shadow: #f5f5f5 0 1px 0;
+                            opacity: 0.9; 
+                            position: absolute;
+                            }
+                    .header{
+                        overflow: hidden;
+	margin: 10px;
+	border-style: solid;
+    border-color: white;
+    background-color: #D3D3D3;
+	padding: 10px 10px;
+	text-align: center;
+	border-radius: 10px;
+                    }
+                    
+                    .us_map{
+                        width: 75%;
+                        float: left;
+                    }
+
+                    
+                    .map{
+                        margin-left: 20px;
+                        width:20%;
+                        float: left;
+                    }
+
+                    .user_interaction{
+                        margin-top: 20px;
+                        margin-left: 20px;
+                        float: left;
+                        padding: 5px 5px;
+                        border: 2px solid #000;
+                        }
+                    
+                    .map_head{
+                        width:20%;
+                        float:left;
+                        margin: 10px;
+                        border: 3px solid #000;
+                        padding: 20px;
+                    }
+                    input[type='radio'] { transform: scale(1.5); }
+                    .legend_stats{
+                        width:20%;
+                        float:left;
+                        margin-left: 20px;
+                        margin: 10px;
+                    }
+</style>
+<body>
+    <h1 class = "header">Visualization of Death by Gun Shots</h1>
+    <div id = "tool_tip"></div>
+    <div>
+        <div id="us_map" class ="us_map"></div>
+        <div id="map" class ="map">
+            
+        </div>
+        <div id="map_head" class ="map_head">
+            <h1 class = "map_head_h1">Gun Deaths - </h1>
+            <p class = "map_head_total">Total deaths: </p>
+            <p class = "map_head_men">Men deaths: </p>
+            <p class = "map_head_women">Women deaths: </p>
+            <p class = "map_head_other">Others/Unknown deaths: </p>
+
+        </div>
+        <div id="user_interaction" class ="user_interaction" >
+                    
+                    <label for="male">
+                        <input type="radio" class ="interaction" id="chkYes" name="chkPassPort" onclick="showMaleDeaths()" />
+                        <label style="font-size: 17px; padding: 2px">Deaths of all Men</label>
+                    </label>
+                    <br>
+                    <label for="female">
+                        <input type="radio" class ="interaction" id="chkNo" name="chkPassPort" onclick="showFemaleDeaths()" />
+                        <label style="font-size: 17px; padding: 2px;">Deaths of all Women</label>
+                    </label>
+
+
+        </div>
+        <div id="user_interaction_zoom" class ="user_interaction" style="display: none;" >
+                    
+                <label for="male" >
+                    <input type="radio" class ="interaction" id="genderDistribution" name="distribution"  />
+                    <label style="font-size: 17px; padding: 2px;">Gender Wise Distribution</label>
+                </label>
+                <br>
+                <label for="female">
+                    <input type="radio" class ="interaction" id="ageDistribution" name="distribution" />
+                    <label style="font-size: 17px; padding: 2px;">Age Wise Distribution</label>
+                </label>
+
+
+    </div>
+    <div class = "legend_stats" id = "legend_stats">
+        <div class = "legend" id = "legend" style= "float:left"></div>
+        <div class = "stats" id = "stats" style= "float:left; display: none" >
+                <h2 class = "stats_h1">Age Group </h2>
+                <p class = "stats_adult">Adults: </p>
+                <p class = "stats_teen">Teenagers: </p>
+                <p class = "stats_children">Children: </p>
+                <p class = "stats_unknown">Unknown: </p>
+        </div>
+        </div>
+    </div>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://d3js.org/topojson.v1.min.js"></script>
+<script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script>
+
+//Map dimensions (in pixels)
+var width = 1000,
+    height = 600;
+var active = d3.select(null);
+var offsetL = document.getElementById('map').offsetLeft+10;
+var offsetT = document.getElementById('map').offsetTop+10;
+var color = d3.scaleLinear()
+    .domain([150,300,450,600,750,900,1050,1500])
+    .range(["#ff9999", "#ff4d4d", "#ff3333", "#ff1a1a", "#ff0000", "#E60000", "#cc0000", "#b30000"]);
+var legendText = ["0 - 150","151 - 300","301 - 450" ,"451 - 600" ,"601 -750","751-900","901-1050","Above 1050"];
+//Map projection
+var projection = d3.geoAlbersUsa()
+    .translate([width/2,height/2]) //translate to center the map in view
+    .scale(1100);
+//Generate paths based on projection
+var path = d3.geoPath()
+    .projection(projection);
+
+//Create an SVG
+var svg = d3.select("#us_map").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+        svg.append("rect")
+            .attr("class", "background")
+            .attr("width", width)
+            .attr("height", height)
+            .on("click", reset)
+            ;
+//Group for the map features
+var g = svg.append("g");
+
+var tooltip = d3.select("#tool_tip")
+         .append("div")
+         .attr("class", "tooltip hidden");
+//Create zoom/pan listener
+//Change [1,Infinity] to adjust the min/max zoom scale
+var zoom = d3.zoom()
+        .scaleExtent([1,8])
+        .on("zoom",zoomed);
+svg.call(zoom);
+
+var legend = d3.select("#map").append("h2").text("Heat Map of Deaths").attr("margin-left","20px" ).attr("margin-bottom","10px").append("svg")
+      			.attr("class", "legend")
+     			.attr("width", 150)
+                .attr("height", 160)
+                .style("margin-left", "20")
+   				.selectAll("g")
+   				.data(color.domain().slice())
+   				.enter()
+   				.append("g")
+     			.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  	legend.append("rect")
+   		  .attr("width", 18)
+   		  .attr("height", 18)
+          .style("fill", color) 
+          .style("stroke", "#123412");
+
+  	legend.append("text")
+  		  .data(legendText)
+      	  .attr("x", 24)
+      	  .attr("y", 9)
+      	  .attr("dy", ".35em")
+      	  .text(function(d) { return d; });
+// d3.json("us-states.topojson",function(error,geodata) {
+//   if (error) return console.log(error); //unknown error, check the console
+
+//   //Create a path for each map feature in the data
+//   features.selectAll("path")
+//     .data(topojson.feature(geodata,geodata.objects.collection).features) //generate features from TopoJSON
+//     .enter()
+//     .append("path")
+//     .attr("d",path)
+//     .on("click",clicked);
+
+// });
+
+            d3.queue()
+            .defer(d3.json, "us-states.topojson")
+            .defer(d3.csv,"SlateGunDeaths.csv")
+            .defer(d3.csv, "states_pop.csv")
+            .await(ready);
+        
+        var populationById = {};
+        var mainFrameOne = document.getElementById("user_interaction"); 
+        var mainFrameTwo = document.getElementById("user_interaction_zoom");
+        function ready(error, data, SlateGunDeaths, deaths){
+            if(error) return console.log(error);
+
+            var states = topojson.feature(data, data.objects.collection).features;
+                    console.log(states);
+            
+            deaths.forEach(function(d) { 
+                //console.log(d.Names_camel);
+                populationById[d.Names_camel] = +d.victimID; });
+                states.forEach(function(d) { 
+                var name= d.properties.NAME;
+                //console.log(name);
+                d.victimID = populationById[name] });
+
+                show_head("USA",SlateGunDeaths);
+                 
+                    g.selectAll(".state")
+                        .data(states)
+                        .enter().append("path")
+                        .attr("class","state")
+                        .on("mousemove", showTooltip)
+                        .on("mouseout",  function(d,i) {
+                            tooltip.classed("hidden", true);
+                        })
+                        .attr("d",path)
+                        .attr("fill", function(d) { 
+                            //console.log(color(populationById[d.properties.NAME]));
+                            return color(populationById[d.properties.NAME]); })
+                        .on("click",clicked);
+                    
+
+                    // g.selectAll(".slateGunDeath")
+                    // .data(SlateGunDeaths)
+                    // .enter().append("circle")
+                    // .attr("r", 1)
+                    // .attr("fill", "#ff0000")    
+                    // .attr("cx",
+                    // function(d, i){
+                    //     var coords = projection([d.lng,d.lat]);
+                    //     //console.log(coords, i);
+                    //     return coords[0];
+                    //     }
+                    // )
+                    // .attr("cy", 
+                    // function(d){
+                    //     var coords = projection([d.lng,d.lat]);
+                    //     return coords[1];}
+                    
+                    
+                    //     );
+
+            }
+// Add optional onClick events for features here
+// d.properties contains the attributes (e.g. d.properties.name, d.properties.population)
+function clicked(d) {
+  if (active.node() === this) return reset();
+  g.selectAll("circle").remove();
+  document.getElementById('chkYes').checked = false;
+document.getElementById('chkNo').checked = false;
+document.getElementById('genderDistribution').checked = false;
+document.getElementById('ageDistribution').checked = false; 
+d3.select("#legend").selectAll("*").remove();
+//d3.select("#stats").selectAll("*").remove();
+var statsBox = document.getElementById("stats");
+    statsBox.style.display = 'none';
+
+  mainFrameOne.style.display = "none"; 
+   mainFrameTwo.style.display = "block";
+    active.classed("active", false);
+  active = d3.select(this).classed("active", true);
+  //console.log(d.properties.NAME);
+  var bounds = path.bounds(d),
+      dx = bounds[1][0] - bounds[0][0],
+      dy = bounds[1][1] - bounds[0][1],
+      x = (bounds[0][0] + bounds[1][0]) / 2,
+      y = (bounds[0][1] + bounds[1][1]) / 2,
+      scale = .9 / Math.max(dx / width, dy / height),
+      translate = [width / 2 - scale * x, height / 2 - scale * y];
+
+  g.transition()
+      .duration(750)
+      .style("stroke-width", 1.5 / scale + "px")
+      .attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+    var dataMapGlobal = {};
+    
+    d3.csv("SlateGunDeaths.csv", function(data){
+
+    dataMapGlobal = d3.nest()
+		.key(function(d) {return d.state;})
+        .map(data, d3.map);
+        
+    var label = d.properties.NAME;
+    //console.log(dataMap);
+    var postal_name;
+    d3.csv("states_pop.csv",function(data){
+        data.forEach(function(row){
+            if(label == row.Names_camel)
+            {
+                // console.log(row.Names_camel);
+                // console.log(row.state);
+                var postal_name = row.state;
+                
+                var state_deaths = dataMapGlobal.get(postal_name);
+                //console.log(state_deaths);
+                show_head(label, state_deaths);
+                
+                var dataMap = d3.nest()
+		.key(function(d) {return d.city;})
+		.rollup(function(v) {return {
+			lat: d3.mean( v, function(d) {return d.lat}),
+			lon: d3.mean( v, function(d) {return d.lng}),
+			count: v.length,};})
+		.map(state_deaths, d3.map);
+	
+                dataMap.each(function(value,key){
+                        let coords = projection([value.lon, value.lat]);
+                        if (coords != null){
+                            value.lon = coords[0];
+                            value.lat = coords[1];
+                            value.city = key;
+                        } else{ dataMap.remove(key); }
+                    });
+
+	//This is actually faster than updating and more consistent
+	d3.selectAll(".nodes").remove();
+
+	//scale the max value to 50 so we can make the circles we plot manageable
+	var myScale = d3.scaleLinear()
+    		.domain([0, d3.max( dataMap.values() , function(d) {return d.count;})])
+		.range([1, 12]);
+    var nodes = g.selectAll(".nodes")
+		.data(dataMap.values(), function(d){return d.city;})
+		.enter()
+		.append('g')
+		.attr('class','nodes');
+nodes.append("circle")
+		.attr("class","enter")
+        .on("mousemove", showTooltipforCityPoints)
+        .on("mouseout",  function(d,i) {
+                            tooltip.classed("hidden", true);
+                        })        
+                    
+		.attr("cx", function(d) { return d.lon; })
+		.attr("cy", function(d) { return d.lat; })
+		.attr("r", function(d) {
+			return myScale(d.count); 
+		})
+		.attr("fill-opacity", .4)
+		.attr("stroke-width", (d) => { return .1*myScale(d.count) + "px";})
+		.attr("stroke", "gray")
+		.attr('fill',"black");
+                
+	
+                document.getElementById("genderDistribution").addEventListener("click", function(){
+                    show_gender_wise(label,state_deaths);
+                });
+               
+                document.getElementById("ageDistribution").addEventListener("click", function(){
+                        show_age_wise(label,state_deaths);
+                });
+                
+            }
+        });
+    });
+});
+}
+
+function reset() {
+
+  active.classed("active", false);
+  active = d3.select(null);
+
+    g.selectAll("circle").remove();
+
+  g.transition()
+      .duration(750)
+      .style("stroke-width", "1.5px")
+      .attr("transform", "");
+      mainFrameOne.style.display ="block";
+         mainFrameTwo.style.display = "none" ; 
+         var statsBox = document.getElementById("stats");
+    statsBox.style.display = 'none';
+document.getElementById('chkYes').checked = false;
+document.getElementById('chkNo').checked = false;
+document.getElementById('genderDistribution').checked = false;
+document.getElementById('ageDistribution').checked = false;
+d3.select("#legend").selectAll("*").remove();
+
+d3.csv("SlateGunDeaths.csv",function(slategun){
+    show_head("USA", slategun);
+
+});
+
+    //  $('input:radio[name=chkPassPort]').each(function ()
+    //                              {
+    //                                  $(this).prop('checked', false);
+    //                              });
+}
+function zoomed() {
+                 g.attr("transform", d3.event.transform);
+}
+function showTooltip(d) {
+      label = d.properties.NAME ;
+      var mouse = d3.mouse(svg.node())
+        .map( function(d) { return parseInt(d); } );
+      tooltip.classed("hidden", false)
+        .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
+        .html("State: " + label + "<br>Deaths: " +  populationById[label]);
+    }
+function showTooltipforPoints(d) {
+      var name = d.name ;
+      var age = d.age;
+      var gender = d.gender;
+      if(!name)
+      {
+          name = "Unknown";
+      }
+      if(!age)
+      {
+          age = "Unknown";
+      }
+      if(!gender)
+      {
+          gender = "Unknown";
+      }
+      var mouse = d3.mouse(svg.node())
+        .map( function(d) { return parseInt(d); } );
+      tooltip.classed("hidden", false)
+        .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
+        .html("Name: " + name + "<br>Age: " +  age + "<br>Gender: " +  gender);
+    }
+function showTooltipforCityPoints(d) {
+      console.log(d);
+      var city = d.city ;
+      var deaths = d.count;
+      var mouse = d3.mouse(svg.node())
+        .map( function(d) { return parseInt(d); } );
+      tooltip.classed("hidden", false)
+        .attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
+        .html("City: " + city + "<br>Deaths: " +  deaths );
+    }
+
+function showFemaleDeaths(){
+    g.selectAll("circle").remove();
+    d3.csv("SlateGunDeaths.csv",function(d)
+    {
+        femaleDeathsMap = d3.nest()
+                            .key(function(f){return f.gender;})
+                            .map(d,d3.map);
+        console.log(femaleDeathsMap);
+
+        SlateGunDeaths = femaleDeathsMap.get("F");
+        console.log(SlateGunDeaths);
+        g.selectAll(".slateGunDeath")
+                    .data(SlateGunDeaths)
+                    .enter().append("circle")
+                    .attr("r", 2)
+                    .attr("fill", "brown")    
+                    .attr("cx",
+                    function(d, i){
+                        var coords = projection([d.lng,d.lat]);
+                        //console.log(coords, i);
+                        return coords[0];
+                        }
+                    )
+                    .attr("cy", 
+                    function(d){
+                        var coords = projection([d.lng,d.lat]);
+                        return coords[1];}            
+                        );
+    });
+}
+
+function showMaleDeaths(){
+    g.selectAll("circle").remove();
+    d3.csv("SlateGunDeaths.csv",function(d)
+    {
+        femaleDeathsMap = d3.nest()
+                            .key(function(f){return f.gender;})
+                            .map(d,d3.map);
+        //console.log(femaleDeathsMap);
+
+        SlateGunDeaths = femaleDeathsMap.get("M");
+       // console.log(SlateGunDeaths);
+        g.selectAll(".slateGunDeath")
+                    .data(SlateGunDeaths)
+                    .enter().append("circle")
+                    .attr("r", 2)
+                    .attr("fill", "blue")    
+                    .attr("cx",
+                    function(d, i){
+                        var coords = projection([d.lng,d.lat]);
+                        //console.log(coords, i);
+                        return coords[0];
+                        }
+                    )
+                    .attr("cy", 
+                    function(d){
+                        var coords = projection([d.lng,d.lat]);
+                        return coords[1];}            
+                        );
+    });
+}
+function show_age_wise(label, state_deaths){
+    g.selectAll("circle").remove();
+
+    console.log(state_deaths);
+    var total_deaths = state_deaths.length;
+    city_grouped_deaths = d3.nest()
+                                    .key(function(d){return d.city;})
+                                    .rollup(function(r){return{
+                                        lat: d3.mean(r, function(c){return c.lat}),
+                                        lng: d3.mean(r, function(c){return c.lng}),
+                                        averageAge: d3.mean(r, function(c){return c.age}),
+                                        count: r.length,
+                                        
+                                    };})
+                                    .map(state_deaths,d3.map);
+    //console.log(city_grouped_deaths);
+
+var gendercolor = d3.scaleLinear()
+                    .domain([10,20,30,40])
+                    .range(["#2E0066", "#3600FF  ","#00E8FF","none"]);
+    var genderlegendText = ["Children","Teenagers","Adults","Unknown"];
+    d3.select("#legend").selectAll("*").remove();
+    //console.log(value);
+    var gendercolors = ["#00E8FF", "#3600FF  ","#2E0066","none"];
+    var genderlegend = d3.select("#legend").append("svg")
+      			.attr("class", "legend")
+     			.attr("width", 100)
+                .attr("height", 90)
+                .style("margin-left", "20")
+   				.selectAll("g")
+   				.data(gendercolor.domain().slice())
+   				.enter()
+   				.append("g")
+     			.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  	genderlegend.append("rect")
+          .data(gendercolors)                          
+   		  .attr("width", 18)
+   		  .attr("height", 18)
+          .style("fill", function(d){return d;}) 
+          .style("stroke", "#123412");
+
+  	genderlegend.append("text")
+  		  .data(genderlegendText)
+      	  .attr("x", 24)
+      	  .attr("y", 9)
+      	  .attr("dy", ".35em")
+      	  .text(function(d) { return d; });
+    var city_gender_group = d3.nest()
+                                    .key(function(d) {return d.ageGroup})
+                                    .map(state_deaths,d3.map);
+    console.log(city_gender_group);
+    var statsBox = document.getElementById("stats");
+    statsBox.style.display = 'block';
+    d3.select(".stats_adult").text("Adults: ").append("span").text(function(){if(city_gender_group.get("3"))
+                                                                                    return city_gender_group.get("3").length;
+                                                                                else 
+                                                                                    return 0; 
+                                                                                    });
+d3.select(".stats_teen").text("Teenagers: ").append("span").text(function(){if(city_gender_group.get("2"))
+                                                                                    return city_gender_group.get("2").length ;
+                                                                                else 
+                                                                                return 0; 
+                                                                                    });
+    d3.select(".stats_children").text("Children: ").append("span").text(function(){if(city_gender_group.get("1"))
+    return city_gender_group.get("1").length ;
+else 
+return 0; 
+    });
+d3.select(".stats_unknown").text("Unknown: ").append("span").text(function(){
+    if (city_gender_group.get(""))
+    return city_gender_group.get("").length;
+    else
+    return 0;
+    });    
+
+
+    city_gender_group.each(function(value,key){
+    if (key == "3"){
+        var colour = "#2E0066  ";
+    }
+    else if(key == "2"){
+        var colour = "#3600FF  ";
+    }
+    else if(key == "1"){
+        var colour = "#00E8FF    ";
+    }
+
+    else 
+        var colour = "none";  
+    //console.log(value);
+
+    g.selectAll(".slateGunDeath")
+                    .data(value)
+                    .enter().append("circle")
+                    .attr("r", 2.5)
+                    .attr("fill", colour)
+                    .on("mousemove", showTooltipforPoints)
+                    .attr("opacity", "0.7")
+                    .attr("stroke","black")
+                    .attr("stroke-width", "0.4")
+                    .on("mouseout",  function(d,i) {
+                            tooltip.classed("hidden", true);
+                        })        
+                    .attr("cx",
+                    function(d, i){
+                        var coords = projection([d.lng,d.lat]);
+                        //console.log(coords, i);
+                        return coords[0];
+                        }
+                    )
+                    .attr("cy", 
+                    function(d){
+                        var coords = projection([d.lng,d.lat]);
+                        return coords[1];}
+                        );
+});
+
+}
+function show_gender_wise(label, state_deaths){
+    g.selectAll("circle").remove();
+    d3.select("#legend").selectAll("*").remove();
+    var total_deaths = state_deaths.length;
+    city_grouped_deaths = d3.nest()
+                                    .key(function(d){return d.city;})
+                                    .rollup(function(r){return{
+                                        lat: d3.mean(r, function(c){return c.lat}),
+                                        lng: d3.mean(r, function(c){return c.lng}),
+                                        averageAge: d3.mean(r, function(c){return c.age}),
+                                        count: r.length,
+                                        
+                                    };})
+                                    .map(state_deaths,d3.map);
+    //console.log(city_grouped_deaths);
+    var gendercolor = d3.scaleLinear()
+                    .domain([0,1,2])
+                    .range(["blue", "#FF008F", "none"]);
+    var genderlegendText = ["Male","Female","Unknown"];
+    var gendercolors = ["blue", "#FF008F", "none"];
+    //console.log(value);
+
+
+    var genderlegend = d3.select("#legend").append("svg")
+      			.attr("class", "legend")
+     			.attr("width", 100)
+                .attr("height", 70)
+                .style("margin-left", "20")
+   				.selectAll("g")
+   				.data(gendercolor.domain().slice())
+   				.enter()
+   				.append("g")
+     			.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+  	genderlegend.append("rect")
+           .data(gendercolors)                         
+   		  .attr("width", 18)
+   		  .attr("height", 18)
+          .style("fill",function(d){
+              console.log(gendercolor);
+              return d;
+          }) 
+          .style("stroke", "#123412");
+
+  	genderlegend.append("text")
+  		  .data(genderlegendText)
+      	  .attr("x", 24)
+      	  .attr("y", 9)
+      	  .attr("dy", ".35em")
+      	  .text(function(d) { return d; });
+    
+    var city_gender_group = d3.nest()
+                                    .key(function(d) {return d.gender})
+                                    .map(state_deaths,d3.map);
+    //console.log(city_gender_group.get("M").length);
+
+    city_gender_group.each(function(value,key){
+    if (key == "M"){
+        var colour = "blue";
+    }
+    else if(key == "F"){
+        var colour = "#FF008F";
+    }
+    else 
+        var colour = "none";  
+    
+    
+    //console.log(value);
+    g.selectAll(".slateGunDeath")
+                    .data(value)
+                    .enter().append("circle")
+                    .attr("r", 2.5)
+                    .attr("fill", colour)
+                    .on("mousemove", showTooltipforPoints)
+                    .attr("stroke","black")
+                    .attr("stroke-width", "0.4")
+                    .attr("opacity", "0.7")
+                    .on("mouseout",  function(d,i) {
+                            tooltip.classed("hidden", true);
+                        })        
+                    .attr("cx",
+                    function(d, i){
+                        var coords = projection([d.lng,d.lat]);
+                        //console.log(coords, i);
+                        return coords[0];
+                        }
+                    )
+                    .attr("cy", 
+                    function(d){
+                        var coords = projection([d.lng,d.lat]);
+                        return coords[1];}
+                        );
+});
+}
+
+function show_head(str, d){
+var gen_dist = d3.nest().key(function(r){return r.gender}).map(d, d3.map);
+var map_head = d3.select(".map_head_h1").text("Gun Deaths - ").append("span").text(str);
+d3.select(".map_head_total").text("Total Deaths - ").append("span").text(d.length);
+d3.select(".map_head_men").text("Men Deaths - ").append("span").text(function(){if(gen_dist.get("M"))
+                                                                                    return gen_dist.get("M").length ;
+                                                                                else 
+                                                                                return 0; 
+                                                                                    });
+d3.select(".map_head_women").text("Women Deaths - ").append("span").text(function(){if(gen_dist.get("F"))
+                                                                                    return gen_dist.get("F").length ;
+                                                                                else 
+                                                                                return 0; 
+                                                                                    });
+d3.select(".map_head_other").text("Other/Unknown Deaths - ").append("span").text(function(){
+    if (gen_dist.get(""))
+    return gen_dist.get("").length;
+    else
+    return 0;
+    });    
+
+}
+
+</script>
